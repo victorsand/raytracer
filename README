@@ -7,6 +7,8 @@
                                                                  __/ |    
                                                                 |___/     
 																
-Written by Victor Sand (victor.sand@gmail.com) with the exception of 
-EasyBMP, which is used to write the pixel array to a bmp file.
+Written by Victor Sand (victor.sand@gmail.com) 
+
+For writing the pixel array to file, the EasyBMP library 
+(http://easybmp.sourceforge.net) is used.
 

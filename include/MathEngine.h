@@ -46,7 +46,7 @@ public:
     float x() const { return x_; }
     float y() const { return y_; }
     float z() const { return z_; }
-    float magnitude();
+    float magnitude() const;
     void normalize();
     static Vector3f cross(Vector3f _a, Vector3f _b);
 private:

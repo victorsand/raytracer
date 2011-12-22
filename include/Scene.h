@@ -14,6 +14,7 @@ class SceneObject;
 class Output;
 class Color4f;
 class IntersectionInfo;
+class FocusPlane;
 
 class Scene {
 public:
@@ -35,6 +36,7 @@ private:
     std::vector<Light*> light_;
     AmbientLight *ambientLight_;
     ImagePlane* imagePlane_;
+    FocusPlane* focusPlane_;
     Camera* camera_;
      Material currentMaterial_;
     int outputWidth_;
@@ -44,6 +46,9 @@ private:
     int superSamplingFactor_;
     int samplesPerAreaLight_;
     float shadowBias_;
+    float focalLength_; 
+    float apertureSize_;
+    int dofSamples_;
 };
 
 #endif

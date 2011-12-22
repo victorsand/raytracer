@@ -5,6 +5,7 @@
 #include "Triangle.h"
 #include "SceneObject.h"
 #include "ImagePlane.h"
+#include "FocusPlane.h"
 #include "IntersectionInfo.h"
 #include "EasyBMP.h"
 #include "DirectionalLight.h"
@@ -20,7 +21,10 @@
 Scene::Scene(std::string _sceneFileName) 
     : sceneFileName_(_sceneFileName),
       superSamplingFactor_(1.f),
-      samplesPerAreaLight_(1) {}
+      samplesPerAreaLight_(1),
+      dofSamples_(1),
+      focalLength_(1.f),
+      apertureSize_(1.f) {}
 
 void Scene::parse() {
 
@@ -55,6 +59,10 @@ void Scene::parse() {
             Vector3f u(cross(b,w));
             u.normalize();
             Vector3f v(cross(w,u));
+            v.normalize();
+            camera_->wIs(w);
+            camera_->uIs(u);
+            camera_->vIs(v);
             Point3f c = eye+w;
             float y = tan(fov/2.0f);
             float x = tan(asp*fov/2.0f);
@@ -86,6 +94,26 @@ void Scene::parse() {
             int s;
             ss >> s;
             samplesPerAreaLight_ = s;
+        } else if (command == "DepthOfFieldSamples") {
+            // camera, focal length and aperture size
+            // need to be set before this one, as this
+            // creates the focal plane
+            int s;
+            ss >> s;
+            dofSamples_ = s;
+            Point3f p0 = 
+                camera_->eye()+camera_->w()*(1.f+focalLength_);
+            Vector3f normal = camera_->w()*-1.f;
+            focusPlane_ = new FocusPlane(p0, normal);
+
+        } else if (command == "FocalLength") {
+            float f;
+            ss >> f;
+            focalLength_ = f;
+        } else if (command == "ApertureSize") {
+            float a;
+            ss >> a;
+            apertureSize_ = a;
         }
         /*
 		else
@@ -151,7 +179,7 @@ void Scene::parse() {
             ss>>cx>>cy >> cz >> ax >> ay >> az >> bx >> by >> bz >> r >> g >> b;
             Point3f center(cx, cy, cz);
             Vector3f av(ax, ay, az);
-            Vector3f bv(bx, by, bx);
+            Vector3f bv(bx, by, bz);
             Color4f c(r, g ,b,1.f);
             light_.push_back(new AreaLight(center, av, bv, c));
 		} else if (command == "DirectionalLight") {
@@ -207,11 +235,32 @@ void Scene::render() {
                         ssu < 1.f &&
                         ssv > 0.f &&
                         ssv < 1.f) {
+                            // Point on image plane
                             Point3f imagePlanePoint = 
                                 imagePlane_->imagePlanePoint(ssu,ssv);
-                            Ray ray = camera_->generateRay(imagePlanePoint);
-                            Color4f sscolor = traceRay(ray, bounceDepth_);
-                            color += traceRay(ray, bounceDepth_);
+
+                            // Find intersection with focus plane
+                            Ray focRay = camera_->generateRay(imagePlanePoint);
+                                IntersectionInfo fpii;
+                                fpii = focusPlane_->rayIntersect(focRay);
+
+                            // Generate more rays (simulate aperture)
+                            std::vector<Ray> aptRays = 
+                                camera_->generateApertureRays(imagePlanePoint,
+                                                              fpii.point(),
+                                                              apertureSize_,
+                                                              dofSamples_);
+                            // Trace aperture rays
+                            Color4f aprtCol(0.f, 0.f, 0.f, 1.f);
+                            std::vector<Ray>::const_iterator rayIt;
+                            for (rayIt=aptRays.begin(); 
+                                 rayIt!=aptRays.end();
+                                 rayIt++) {
+                                aprtCol += traceRay(*rayIt, bounceDepth_);
+                            }
+                            // Average aperture rays and add to total color
+                            aprtCol = aprtCol*(1.f/dofSamples_);
+                            color += aprtCol;
                             superSamples++;
                     }
                 }

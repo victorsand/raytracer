@@ -40,7 +40,7 @@ Vector3f::Vector3f(float _x, float _y, float _z)
 Vector3f::Vector3f(const Vector3f &_v) 
     : x_(_v.x()), y_(_v.y()), z_(_v.z()) {}
 
-float Vector3f::magnitude() {
+float Vector3f::magnitude() const {
     return sqrt(x_*x_+y_*y_+z_*z_);
 }
 

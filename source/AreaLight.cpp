@@ -6,6 +6,7 @@ AreaLight::AreaLight(Point3f _c, Vector3f _a, Vector3f _b, Color4f _color)
 
 std::vector<Vector3f> 
 AreaLight::surfaceToLightDirection(Point3f _point, int _samples) const {
+    
     std::vector<Vector3f> dirs;
     for (int i=0; i<_samples; ++i) {
         float r1 = (float)rand()/(float)RAND_MAX;

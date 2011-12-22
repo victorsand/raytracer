@@ -216,7 +216,7 @@ void Scene::render() {
     for (int x=0; x<outputWidth_; ++x) {
         prevPercentage = percentage;
         percentage = int(x/(float)outputWidth_*100.0f);
-        if (percentage > prevPercentage) {
+        if (1) {
             std::cout << percentage << "%" << std::endl;
         }
         float u = static_cast<float>(x)/(outputWidth_-1.0f);

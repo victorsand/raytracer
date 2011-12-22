@@ -16,6 +16,7 @@ public:
     Vector3f d() const { return d_; }
     float tMin() const { return tMin_; }
     float tMax() const { return tMax_; }
+    void dIs(Vector3f d) { d_ = d; }
 private:
     Point3f e_;
     Vector3f d_;

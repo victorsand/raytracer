@@ -42,6 +42,7 @@ private:
     std::string outputFileName_;
     int bounceDepth_;
     int superSamplingFactor_;
+    int samplesPerAreaLight_;
     float shadowBias_;
 };
 

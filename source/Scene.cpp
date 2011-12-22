@@ -10,6 +10,7 @@
 #include "DirectionalLight.h"
 #include "AmbientLight.h"
 #include "PointLight.h"
+#include "AreaLight.h"
 #include <math.h>
 #include <fstream>
 #include <sstream>
@@ -18,7 +19,8 @@
 
 Scene::Scene(std::string _sceneFileName) 
     : sceneFileName_(_sceneFileName),
-      superSamplingFactor_(1.f) {}
+      superSamplingFactor_(1.f),
+      samplesPerAreaLight_(1) {}
 
 void Scene::parse() {
 
@@ -76,12 +78,15 @@ void Scene::parse() {
             int ssf;
             ss >> ssf;
             superSamplingFactor_ = ssf;
-        }
-		else if (command == "ShadowBias") {
+        } else if (command == "ShadowBias") {
 			float bias;
 			ss >> bias;
 			shadowBias_ = bias;
-		}
+		} else if (command == "SamplesPerAreaLight") {
+            int s;
+            ss >> s;
+            samplesPerAreaLight_ = s;
+        }
         /*
 		else
 		if (command == "PushMatrix")
@@ -141,6 +146,14 @@ void Scene::parse() {
 			Point3f pos(px, py, pz);
 			Color4f col(r, g, b, 1.0);
             light_.push_back(new PointLight(pos, col));
+        } else if (command == "AreaLight") {
+            float cx, cy, cz, ax, ay, az, bx, by, bz, r, g, b;
+            ss>>cx>>cy >> cz >> ax >> ay >> az >> bx >> by >> bz >> r >> g >> b;
+            Point3f center(cx, cy, cz);
+            Vector3f av(ax, ay, az);
+            Vector3f bv(bx, by, bx);
+            Color4f c(r, g ,b,1.f);
+            light_.push_back(new AreaLight(center, av, bv, c));
 		} else if (command == "DirectionalLight") {
 			float dx, dy, dz, r, g, b;
 			ss >> dx >> dy >> dz >> r >> g >> b;
@@ -181,9 +194,6 @@ void Scene::render() {
         float u = static_cast<float>(x)/(outputWidth_-1.0f);
         for (int y=0; y<outputHeight_; ++y) {
             float v = static_cast<float>(y)/(outputHeight_-1.0f);
-            Point3f testPoint = imagePlane_->imagePlanePoint(u,v);
-            Ray testRay = camera_->generateRay(testPoint);
-            Color4f testColor = traceRay(testRay, bounceDepth_);
 
             // Supersample (send more rays within the same pixels
             // and average the resulting color).
@@ -261,42 +271,59 @@ Color4f Scene::traceRay(Ray _ray, int _depth) {
 Color4f Scene::phongShade(IntersectionInfo _ii, Material _m) {
 
     std::vector<Light*>::const_iterator it;
-    Color4f c = Color4f(0.f, 0.f, 0.f, 1.f);
-    if (ambientLight_) c += _m.ambient()*ambientLight_->color();
+    Color4f totalColor = Color4f(0.f, 0.f, 0.f, 1.f);
+    if (ambientLight_) totalColor += _m.ambient()*ambientLight_->color();
     Vector3f V = camera_->eye() - _ii.point();
     V.normalize();
 
     for (it = light_.begin(); it!=light_.end(); ++it) {
-        Vector3f L = (*it)->surfaceToLightDirection(_ii.point());
-        
-        // If any object is between this light and the
-        // point, skip this light in the shading calculation
-        Ray occludeTestRay = Ray(_ii.point(),
-                              L, shadowBias_, 
-                              1.f);
-        std::vector<SceneObject*>::const_iterator objIt;
-        IntersectionInfo ii;
-        for (objIt = sceneObject_.begin(); objIt != sceneObject_.end(); ++objIt) {
-            ii = (*objIt)->shape()->rayIntersect(occludeTestRay);
-            if (ii.hitTest() == IntersectionInfo::hit()) break;
-        }
-        if (ii.hitTest() == IntersectionInfo::hit()) break;
 
-        // Light is visible from the point, so shade
-        Vector3f N = _ii.normal();
-        //if (dot(N,V) < 0.f) N = -1.f*N;      
-        L.normalize();
-        float LdotN = dot(L, N);
-        float LdotNclamped = (LdotN > 0.f) ? LdotN : 0.f;
-        c += _m.diffuse()*(*it)->color()*LdotNclamped;
-        Vector3f R = -1.f*L+2.f*LdotN*N;
-        R.normalize();
-        float RdotV = dot(R,V);
-        float RdotVclamped = (RdotV > 0.f) ? RdotV : 0.f;
-        c += _m.specular()*(*it)->color()*pow(RdotVclamped,_m.shine());     
-    }
+        std::vector<Vector3f> dirs = 
+            (*it)->surfaceToLightDirection(_ii.point(), samplesPerAreaLight_);
 
-    return c;
+        // For every light, iterate through all sample directions
+        // generated.
+        std::vector<Vector3f>::const_iterator dirIt = dirs.begin();
+        Color4f lightColor(0.f, 0.f, 0.f, 1.f);
+        for (dirIt=dirs.begin(); dirIt!=dirs.end(); dirIt++) {
+  
+            Vector3f L = (*dirIt);
+            int dude = L.magnitude();
+            // If any object is between this light and the
+            // point, skip this direction in the shading calculation
+            Ray occludeTestRay = Ray(_ii.point(), 
+                                     L, 
+                                     shadowBias_, 
+                                     (*it)->maxT());
+            occludeTestRay.dIs(L);
+            std::vector<SceneObject*>::const_iterator objIt;
+            IntersectionInfo ii;
+            for (objIt=sceneObject_.begin(); 
+                 objIt!=sceneObject_.end();
+                 ++objIt) {
+                ii = (*objIt)->shape()->rayIntersect(occludeTestRay);
+                if (ii.hitTest() == IntersectionInfo::hit()) break;
+            }
+            if (ii.hitTest() == IntersectionInfo::miss()) {
+                // Light is visible from the point, so shade
+                Vector3f N = _ii.normal();
+                //if (dot(N,V) < 0.f) N = -1.f*N;      
+                L.normalize();
+                float LdotN = dot(L, N);
+                float LdotNclamped = (LdotN >= 0.f) ? LdotN : 0.f;
+                lightColor += _m.diffuse()*(*it)->color()*LdotNclamped;
+                Vector3f R = -1.f*L+2.f*LdotN*N;
+                R.normalize();
+                float RdotV = dot(R,V);
+                float RdotVclamped = (RdotV >= 0.f) ? RdotV : 0.f;
+                lightColor += _m.specular()*(*it)->color()*pow(RdotVclamped,_m.shine());  
+            }
+        } // for light sample directions
+        lightColor = lightColor*(1.f/dirs.size());
+        totalColor += lightColor;
+    } // for all lights
+
+    return totalColor;
 }
 
 void Scene::writeToFile() {

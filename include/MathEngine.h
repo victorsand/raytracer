@@ -1,3 +1,8 @@
+/*
+Victor Sand 
+victor.sand@gmail.com
+*/
+
 #ifndef MATHENGINE_H
 #define MATHENGINE_H
 
@@ -16,6 +21,7 @@ public:
     float x() const { return x_; }
     float y() const{ return y_; }
     float z() const{ return z_; }
+    void pointIs(float _x, float _y, float _z);
 private:
     float x_;
     float y_;
@@ -48,6 +54,7 @@ public:
     float z() const { return z_; }
     float magnitude() const;
     void normalize();
+    void vectorIs(float _x, float _y, float _z);
     static Vector3f cross(Vector3f _a, Vector3f _b);
 private:
     float x_;
@@ -74,6 +81,7 @@ public:
     float a() const { return a_; }
     void operator+=(const Color4f& _c);
     void truncate();
+    void normalize();
 private:
     float r_;
     float g_;
@@ -84,6 +92,7 @@ private:
 Color4f operator*(const Color4f& _c1, const Color4f& _c2);
 Color4f operator*(const Color4f& _c, float _f);
 Color4f operator*(float _f, const Color4f& _c);
+Color4f operator+(const Color4f& _c1, const Color4f& _c2);
 
 #endif
 

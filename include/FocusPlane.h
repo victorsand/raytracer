@@ -1,3 +1,10 @@
+/*
+Victor Sand 
+victor.sand@gmail.com
+
+Defines a focus plane used for depth of field calculation. 
+*/
+
 #ifndef FOCUSPLANE_H
 #define FOCUSPLANE_H
 

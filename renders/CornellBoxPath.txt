@@ -1,0 +1,53 @@
+Camera   0 0 40   0 1 0   0 0 9.9  36.5   1
+Output   512   512   ../CornellBoxPath.bmp
+BounceDepth  6
+SuperSamplingFactor 1
+ShadowBias 0.001
+DepthOfFieldSamples 1
+RenderMode PathTracing
+PathTracingSamples  10000
+
+#Lamp
+Material 0 0 0  0 0 0  0 0 0  0 0 0   40 40  40 0
+Triangle -4 9.99 -4   4 9.99 -4   4 9.99 4
+Triangle -4 9.99 -4   4 9.99 4   -4 9.99  4
+
+## The Box ##
+
+Material   0 0 0   .5 .5 .5  0 0 0   0 0 0   0 0 0  0
+
+# Floor
+Triangle   -10 -10 10   10 -10 -10   -10 -10 -10
+Triangle   10 -10 10   10 -10 -10   -10 -10 10
+
+# Ceiling
+Triangle   10 10 -10   -10 10 10   -10 10 -10
+Triangle   10 10 -10   10 10 10   -10 10 10
+
+# Front wall
+Triangle   -10 -10 -10   10 10 -10   -10 10 -10
+Triangle   10 -10 -10   10 10 -10   -10 -10 -10
+
+# Red wall
+Material   0 0 0   .5 .1 .1   0 0 0   0 0 0   0 0 0  0
+Triangle   -10 10 10   -10 -10 -10   -10 10 -10
+Triangle   -10 -10 10   -10 -10 -10   -10 10 10
+
+# Blue wall
+Material   0 0 0   .2 .2 .8   0 0 0   0 0 0  0 0 0   0
+Triangle   10 -10 10   10 10 -10   10 -10 -10
+Triangle   10 10 10   10 10 -10   10 -10 10
+
+
+
+
+
+## Stuff in the box ##
+
+# Diffuse Sphere
+Material  0 0 0   .2 .9 .2   0 0 0   0 0 0    0 0 0    4
+Sphere   5 -6 1   4
+
+# Mirror Sphere
+Material   0 0 0   .9 .9 .2  0 0 0   0.9 0.9 0.9     0 0 0   0
+Sphere   -5 -6 -5   4

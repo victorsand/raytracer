@@ -10,6 +10,12 @@ Point3f::Point3f(float _x, float _y, float _z)
 Point3f::Point3f(const Point3f &_p) 
     : x_(_p.x()), y_(_p.y()), z_(_p.z()) {}
 
+void Point3f::pointIs(float _x, float _y, float _z) {
+    x_ = _x;
+    y_ = _y;
+    z_ = _z;
+}
+
 Vector3f operator-(const Point3f &_p1, const Point3f &_p2) {
     return Vector3f(_p1.x()-_p2.x(), _p1.y()-_p2.y(), _p1.z()-_p2.z());
 }
@@ -43,6 +49,13 @@ Vector3f::Vector3f(const Vector3f &_v)
 float Vector3f::magnitude() const {
     return sqrt(x_*x_+y_*y_+z_*z_);
 }
+
+void Vector3f::vectorIs(float _x, float _y, float _z) {
+    x_ = _x;
+    y_ = _y;
+    z_ = _z;
+}
+
 
 Vector3f operator*(const Vector3f& _v, const float &_f) {
     return Vector3f(_v.x()*_f, _v.y()*_f, _v.z()*_f);
@@ -106,7 +119,17 @@ void Color4f::truncate() {
     if (g_ > 1.f) g_ = 1.f;
     if (b_ > 1.f) b_ = 1.f;
     if (a_ > 1.f) a_ = 1.f;
+}
 
+void Color4f::normalize() {
+    float m = 0.f;
+    if (r_ > m) m = r_;
+    if (g_ > m) m = g_;
+    if (b_ > m) m = b_;
+    r_ /= m;
+    g_ /= m;
+    b_ /= m;
+    a_ = 1.0;
 }
 
 Color4f operator*(const Color4f& _c1, const Color4f& _c2) {
@@ -114,6 +137,13 @@ Color4f operator*(const Color4f& _c1, const Color4f& _c2) {
                    _c1.g()*_c2.g(),
                    _c1.b()*_c2.b(),
                    _c1.a()*_c2.a());
+}
+
+Color4f operator+(const Color4f& _c1, const Color4f& _c2) {
+    return Color4f(_c1.r()+_c2.r(),
+                   _c1.g()+_c2.g(),
+                   _c1.b()+_c2.b(),
+                   _c1.a()+_c2.a());
 }
 
 Color4f operator*(const Color4f& _c, float _f) {

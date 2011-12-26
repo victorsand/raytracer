@@ -16,6 +16,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include <vector>
 
 Scene::Scene(std::string _sceneFileName) 
@@ -24,7 +25,9 @@ Scene::Scene(std::string _sceneFileName)
       samplesPerAreaLight_(1),
       dofSamples_(1),
       focalLength_(1.f),
-      apertureSize_(1.f) {}
+      apertureSize_(1.f),
+      pathTracingSamples_(500),
+      renderMode_(rayTracing_) {}
 
 void Scene::parse() {
 
@@ -94,6 +97,10 @@ void Scene::parse() {
             int s;
             ss >> s;
             samplesPerAreaLight_ = s;
+        } else if (command == "PathTracingSamples" ) {
+            int pts;
+            ss >> pts;
+            pathTracingSamples_ = pts;
         } else if (command == "DepthOfFieldSamples") {
             // camera, focal length and aperture size
             // need to be set before this one, as this
@@ -189,15 +196,31 @@ void Scene::parse() {
 			Color4f col(r, g, b, 1.0);
 			light_.push_back(new DirectionalLight(dir, col));
 		} else if (command == "Material") {
-			float ra, ga, ba, rd, gd, bd, rs, gs, bs, rr, gr, br, shine;
+			float ra, ga, ba, 
+                rd, gd, bd, 
+                rs, gs, bs,
+                rr, gr, br, 
+                re, ge, be,
+                shine;
 			ss >> ra >> ga >> ba >> rd >> gd >> bd >> rs >> gs
-               >> bs >> rr >> gr >> br >> shine;
+               >> bs >> rr >> gr >> br >> re >> ge >> be >> shine;
 			Color4f amb(ra, ga, ba,1.0);
 			Color4f diff(rd, gd, bd, 1.0);
 			Color4f spec(rs, gs, bs, 1.0);
 			Color4f mirr(rr, gr, br, 1.0);
-			currentMaterial_ = Material(amb, diff, spec, mirr, shine);
-		}
+            Color4f emitt(re, ge, be, 1.0);
+			currentMaterial_ = Material(amb, diff, spec, mirr, emitt, shine);
+		} else if (command == "RenderMode") {
+            std::string mode;
+            ss >> mode;
+            if (mode == "RayTracing") {
+                renderMode_ = rayTracing_;
+            } else if (mode == "PathTracing") {
+                renderMode_ = pathTracing_;
+            } else if (mode == "PhotnMapping") {
+                renderMode_ = photonMapping_;
+            }
+        }
 	}
 	sceneFileStream.close();
 }
@@ -208,17 +231,14 @@ void Scene::render() {
     float sh = 1.f/outputHeight_;
     float ssw = sw/(superSamplingFactor_+1.f);
     float ssh = sh/(superSamplingFactor_+1.f);
-    int percentage = 0;
-    int prevPercentage = -1;
+    float percentage = 0;
 
     // For each pixel in the output image, sample 
     // (and possibly supersample) the image plane at u, v coordinates
     for (int x=0; x<outputWidth_; ++x) {
-        prevPercentage = percentage;
-        percentage = int(x/(float)outputWidth_*100.0f);
-        if (1) {
-            std::cout << percentage << "%" << std::endl;
-        }
+        percentage = x/(float)outputWidth_*100.0f;
+        std::cout << std::setprecision(4) << percentage << "%" << std::endl;
+
         float u = static_cast<float>(x)/(outputWidth_-1.0f);
         for (int y=0; y<outputHeight_; ++y) {
             float v = static_cast<float>(y)/(outputHeight_-1.0f);
@@ -256,11 +276,20 @@ void Scene::render() {
                             for (rayIt=aptRays.begin(); 
                                  rayIt!=aptRays.end();
                                  rayIt++) {
-                                aprtCol += traceRay(*rayIt, bounceDepth_);
+                                if (renderMode_ == rayTracing_) {
+                                    aprtCol += traceRay(*rayIt, bounceDepth_);
+                                } else if (renderMode_ == pathTracing_) {
+                                    Color4f pathTraceColor(0.f, 0.f, 0.f, 1.f);
+                                    for (int k=0; k<pathTracingSamples_; ++k) {
+                                        pathTraceColor += tracePath(*rayIt, bounceDepth_);
+                                    }
+                                    aprtCol += pathTraceColor*(1.f/pathTracingSamples_);
+                                } else if (renderMode_ == photonMapping_) {
+                                    // photon map
+                                }
                             }
                             // Average aperture rays and add to total color
-                            aprtCol = aprtCol*(1.f/dofSamples_);
-                            color += aprtCol;
+                            color += aprtCol*(1.f/dofSamples_);
                             superSamples++;
                     }
                 }
@@ -273,24 +302,30 @@ void Scene::render() {
     }
 }
 
-Color4f Scene::traceRay(Ray _ray, int _depth) {
-
-    // Check intesection with all objects in the scene
-    // and store the result in an IntersectionInfo object
+IntersectionInfo Scene::findNearestIntersection(Ray _ray, Material& _m) {
     std::vector<SceneObject*>::const_iterator it;
     float t = std::numeric_limits<float>::max();
     IntersectionInfo ii;
-    Material m;
-    Color4f c = Color4f(0.f, 0.f, 0.f, 1.f);
     for (it=sceneObject_.begin(); it!=sceneObject_.end(); ++it) {
         IntersectionInfo iiTmp;
         iiTmp = (*it)->shape()->rayIntersect(_ray);
         if (iiTmp.hitTest() == IntersectionInfo::hit() && iiTmp.t() < t) {
             ii = iiTmp;
             t = iiTmp.t();
-            m = (*it)->material();
+            _m = (*it)->material();
         }
     }
+    return ii;
+}
+
+Color4f Scene::traceRay(Ray _ray, int _depth) {
+
+    Color4f c = Color4f(0.f, 0.f, 0.f, 1.f);
+    if (_depth < 1) return c;
+
+    // Check intersection with all objects in the scene and store results
+    Material m;
+    IntersectionInfo ii = findNearestIntersection(_ray, m);
 
     // If we hit something, we now have the closest t value
     // and we shade. If the surface is mirrored, we send reflective
@@ -300,8 +335,7 @@ Color4f Scene::traceRay(Ray _ray, int _depth) {
          if (m.mirror().r() > 0.f &&
              m.mirror().g() > 0.f &&
              m.mirror().b() > 0.f &&
-             m.mirror().a() > 0.f &&
-             _depth > 0) {
+             m.mirror().a()) {
                  Vector3f inDir = _ray.d();
                  inDir.normalize();
                  Vector3f outDir = 
@@ -365,7 +399,8 @@ Color4f Scene::phongShade(IntersectionInfo _ii, Material _m) {
                 R.normalize();
                 float RdotV = dot(R,V);
                 float RdotVclamped = (RdotV >= 0.f) ? RdotV : 0.f;
-                lightColor += _m.specular()*(*it)->color()*pow(RdotVclamped,_m.shine());  
+                lightColor += 
+                    _m.specular()*(*it)->color()*pow(RdotVclamped,_m.shine());  
             }
         } // for light sample directions
         lightColor = lightColor*(1.f/dirs.size());
@@ -375,6 +410,49 @@ Color4f Scene::phongShade(IntersectionInfo _ii, Material _m) {
     return totalColor;
 }
 
+Color4f Scene::tracePath(Ray _r, int _depth) {
+    Color4f c(0.f, 0.f, 0.f, 1.f);
+    if (_depth < 1) return c;
+    Material m;
+    IntersectionInfo ii = findNearestIntersection(_r, m);
+    if (ii.hitTest() == IntersectionInfo::miss()) return c;
+    Color4f emittance = m.emittance();
+    if (emittance.r() > 0.01 || emittance.g() > 0.01 || emittance.b() > 0001) 
+        return emittance;
+    Vector3f newDir = hemisphereVector(ii.normal());
+    Ray newRay(ii.point(),
+               newDir,
+               shadowBias_,
+               std::numeric_limits<float>::max());
+    float cosOmega = dot(newDir, ii.normal());
+    Color4f BDRF = m.diffuse();
+    Color4f reflected = tracePath(newRay, _depth-1);
+    c = (BDRF*cosOmega*reflected);
+    return c;
+
+}
+
+Vector3f Scene::hemisphereVector(Vector3f _normal) {
+    Vector3f v;
+    float r1 = (float)rand()/(float)RAND_MAX;
+    float r2 = (float)rand()/(float)RAND_MAX;
+    float x = 2.f*cos(2.f*M_PI*r1)*sqrt(r2*(1.f-r2));
+    float y = 2.f*sin(2.f*M_PI*r1)*sqrt(r2*(1.f-r2));
+    float z = (1.f-2.f*r2);;
+    v.vectorIs(x,y,z);
+    while (dot(v,_normal) < 0.0) {
+        r1 = (float)rand()/(float)RAND_MAX;
+        r2 = (float)rand()/(float)RAND_MAX;
+        x = 2.f*cos(2.f*M_PI*r1)*sqrt(r2*(1.f-r2));
+        y = 2.f*sin(2.f*M_PI*r1)*sqrt(r2*(1.f-r2));
+        z = (1.f-2.f*r2);;
+        v.vectorIs(x, y, z);
+    }
+    v.normalize();
+    return v;
+}
+
+// For writing to file, the free library EasyBMP is used
 void Scene::writeToFile() {
     BMP image;
     image.SetSize(outputWidth_, outputHeight_);
@@ -393,5 +471,26 @@ void Scene::writeToFile() {
         }
     }
     image.WriteToFile(outputFileName_.c_str());
+}
+
+void Scene::cleanUp() {
+    std::vector<SceneObject*>::iterator soit;
+    for (soit=sceneObject_.begin(); soit!=sceneObject_.end(); ++soit) {
+        delete *soit;
+    }
+    std::vector<Light*>::iterator lit;
+    for (lit=light_.begin(); lit!=light_.end(); ++lit) {
+        delete *lit;
+    }
+    delete imagePlane_;
+    delete focusPlane_;
+    delete ambientLight_;
+    delete camera_;
+}
+
+void Scene::renderModeIs(RenderMode _mode) {
+    if (renderMode_ != _mode) {
+        renderMode_ = _mode;
+    }
 }
 

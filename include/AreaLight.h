@@ -1,5 +1,7 @@
-// Victor Sand
-// victor.sand@gmail.com
+/*
+Victor Sand 
+victor.sand@gmail.com
+*/
 
 #ifndef AREALIGHT_H
 #define AREALIGHT_H

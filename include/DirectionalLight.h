@@ -1,3 +1,8 @@
+/*
+Victor Sand 
+victor.sand@gmail.com
+*/
+
 #ifndef DIRECTIONALLIGHT_H
 #define DIRECTIONALLIGHT_H
 

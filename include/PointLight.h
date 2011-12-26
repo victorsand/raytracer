@@ -1,3 +1,8 @@
+/*
+Victor Sand 
+victor.sand@gmail.com
+*/
+
 #ifndef POINTLIGHT_H
 #define POINTLIGHT_H
 

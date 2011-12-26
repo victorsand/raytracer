@@ -1,9 +1,15 @@
+/*
+Victor Sand 
+victor.sand@gmail.com
+
+Camera class representing virtual scene camera.
+Responsible for creating viewing rays (either a single ray per sample
+or several for aperture simulation).
+
+*/
+
 #ifndef CAMERA_H
 #define CAMERA_H
-
-/*
-Represents virtual scene camera.
-*/
 
 #include "MathEngine.h"
 #include "Ray.h"

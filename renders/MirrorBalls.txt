@@ -1,0 +1,47 @@
+Camera   2 30 -35   0 1 0 	0 -2 4 45 1
+Output   800 800../Balls.bmp
+SuperSamplingFactor 2
+BounceDepth   2
+ShadowBias 0.005
+
+#Lights
+AmbientLight   0.1 0.1 0.1
+DirectionalLight -1 -1 1	 0.7 0.7 0.7
+
+
+# Floor
+Material   0 0.5 0   0 0.5 0   0 0 0   0 0 0   0
+Triangle   -30 0 30   30 0 -30   -30 0 -30
+Triangle   30 0 30   30 0 -30   -30 0 30
+
+#Spheres
+Material 	0 0 0 	0 0 0	 1 1 1 	1 1 1	50
+Sphere 		0 3 0	3
+
+Material 	0 0 0 	0 0 0	 1 1 1 	1 1 1	50
+Sphere 		6 3 0	3
+
+Material 	0 0 0 	0 0 0	 1 1 1 	1 1 1	50
+Sphere 		-6 3 0	3
+
+Material 	0 0 0 	0 0 0	 1 1 1 	1 1 1	50
+Sphere 		-3 3 -6	 3
+
+Material 	0 0 0 	0 0 0	 1 1 1 	1 1 1	50
+Sphere 		3 3 -6	 3
+
+Material 	0 0 0 	0 0 0	 1 1 1 	1 1 1	50
+Sphere 		0 3 -12	 3
+
+Material   	0 0 0   0 0 0  1 1 1   1 1 1    	50
+Sphere   	 -9 3 6  3
+
+Material 	0 0 0 	0 0 0	 1 1 1 	1 1 1	50
+Sphere 		-3 3 6	 3
+
+Material 	0 0 0 	0 0 0	 1 1 1 	1 1 1	50
+Sphere 		3 3 6	 3
+
+Material 	0 0 0 	0 0 0	 1 1 1 	1 1 1	50
+Sphere 		9 3 6	 3
+

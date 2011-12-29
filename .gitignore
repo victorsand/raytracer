@@ -1,5 +1,4 @@
-*.bmp
-*.jpg
 raytracer_vs2010/
 scenes/
 EasyBMP/
+/*.bmp

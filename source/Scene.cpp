@@ -233,19 +233,15 @@ void Scene::render() {
     float ssw = sw/(superSamplingFactor_+1.f);
     float ssh = sh/(superSamplingFactor_+1.f);
     float percentage = 0;
-
     // For each pixel in the output image, sample 
     // (and possibly supersample) the image plane at u, v coordinates
     for (int x=0; x<outputWidth_; ++x) {
         percentage = x/(float)outputWidth_*100.0f;
         std::cout << std::setprecision(4) << percentage << "%" << std::endl;
-
         float u = static_cast<float>(x)/(outputWidth_-1.0f);
-
         #pragma omp parallel for ordered schedule(dynamic)
         for (int y=0; y<outputHeight_; ++y) {
             float v = static_cast<float>(y)/(outputHeight_-1.0f);
-
             // Supersample (send more rays within the same pixels
             // and average the resulting color).
             Color3f color(0.f, 0.f, 0.f);  
@@ -261,12 +257,10 @@ void Scene::render() {
                             // Point on image plane
                             Point3f imagePlanePoint = 
                                 imagePlane_->imagePlanePoint(ssu,ssv);
-
                             // Find intersection with focus plane
                             Ray focRay = camera_->generateRay(imagePlanePoint);
                                 IntersectionInfo fpii;
                                 fpii = focusPlane_->rayIntersect(focRay);
-
                             // Generate more rays (simulate aperture)
                             std::vector<Ray> aptRays = 
                                 camera_->generateApertureRays(imagePlanePoint,

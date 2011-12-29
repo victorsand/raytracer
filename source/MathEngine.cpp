@@ -56,7 +56,6 @@ void Vector3f::vectorIs(float _x, float _y, float _z) {
     z_ = _z;
 }
 
-
 Vector3f operator*(const Vector3f& _v, const float &_f) {
     return Vector3f(_v.x()*_f, _v.y()*_f, _v.z()*_f);
 }
@@ -98,30 +97,28 @@ Vector3f operator-(const Vector3f &_a, const Vector3f &_b) {
                     _a.z() - _b.z());
 }
 
-Color4f::Color4f() 
-    : r_(0.0), b_(0.0), g_(0.0), a_(0.0) {}
+Color3f::Color3f() 
+    : r_(0.0), b_(0.0), g_(0.0) {}
 
-Color4f::Color4f(float _r, float _g, float _b, float _a) 
-    : r_(_r), g_(_g), b_(_b), a_(_a) {}
+Color3f::Color3f(float _r, float _g, float _b) 
+    : r_(_r), g_(_g), b_(_b) {}
 
-Color4f::Color4f(const Color4f& _c) 
-    : r_(_c.r()), g_(_c.g()), b_(_c.b()), a_(_c.a()) {}
+Color3f::Color3f(const Color3f& _c) 
+    : r_(_c.r()), g_(_c.g()), b_(_c.b()) {}
 
-void Color4f::operator+=(const Color4f& _c) {
+void Color3f::operator+=(const Color3f& _c) {
     r_ += _c.r();
     g_ += _c.g();
     b_ += _c.b();
-    a_ += _c.a();
 }
 
-void Color4f::truncate() {
+void Color3f::truncate() {
     if (r_ > 1.f) r_ = 1.f;
     if (g_ > 1.f) g_ = 1.f;
     if (b_ > 1.f) b_ = 1.f;
-    if (a_ > 1.f) a_ = 1.f;
 }
 
-void Color4f::normalize() {
+void Color3f::normalize() {
     float m = 0.f;
     if (r_ > m) m = r_;
     if (g_ > m) m = g_;
@@ -129,29 +126,26 @@ void Color4f::normalize() {
     r_ /= m;
     g_ /= m;
     b_ /= m;
-    a_ = 1.0;
 }
 
-Color4f operator*(const Color4f& _c1, const Color4f& _c2) {
-    return Color4f(_c1.r()*_c2.r(),
+Color3f operator*(const Color3f& _c1, const Color3f& _c2) {
+    return Color3f(_c1.r()*_c2.r(),
                    _c1.g()*_c2.g(),
-                   _c1.b()*_c2.b(),
-                   _c1.a()*_c2.a());
+                   _c1.b()*_c2.b());
 }
 
-Color4f operator+(const Color4f& _c1, const Color4f& _c2) {
-    return Color4f(_c1.r()+_c2.r(),
+Color3f operator+(const Color3f& _c1, const Color3f& _c2) {
+    return Color3f(_c1.r()+_c2.r(),
                    _c1.g()+_c2.g(),
-                   _c1.b()+_c2.b(),
-                   _c1.a()+_c2.a());
+                   _c1.b()+_c2.b());
 }
 
-Color4f operator*(const Color4f& _c, float _f) {
-    return Color4f(_c.r()*_f, _c.g()*_f, _c.b()*_f, _c.a()*_f); 
+Color3f operator*(const Color3f& _c, float _f) {
+    return Color3f(_c.r()*_f, _c.g()*_f, _c.b()*_f); 
 }
 
-Color4f operator*(float _f, const Color4f& _c) {
-    return Color4f(_c.r()*_f, _c.g()*_f, _c.b()*_f, _c.a()*_f); 
+Color3f operator*(float _f, const Color3f& _c) {
+    return Color3f(_c.r()*_f, _c.g()*_f, _c.b()*_f); 
 }
 
 

@@ -20,7 +20,7 @@ care of that issue.
 
 class Point3f;
 class Vector3f;
-class Color4f;
+class Color3f;
 
 class Light {
 public:
@@ -30,7 +30,7 @@ public:
         surfaceToLightDirection(Point3f _point, 
                                 int _samples = 1) const = 0;
     virtual float maxT() const = 0;
-    virtual Color4f color() const = 0;
+    virtual Color3f color() const = 0;
 };
 
 #endif

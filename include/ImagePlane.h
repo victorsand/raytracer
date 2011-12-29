@@ -32,15 +32,15 @@ public:
     Point3f c() const { return c_; }
     Point3f imagePlanePoint(float _u, float _v);
     void pixelArraySizeIs(int _size);
-    void pixelIs(int _pixelIndex, Color4f _color);
-    Color4f pixel(int _pixelIndex);
+    void pixelIs(int _pixelIndex, Color3f _color);
+    Color3f pixel(int _pixelIndex);
 private:
     Point3f ll_;
     Point3f ul_;
     Point3f lr_;
     Point3f ur_;
     Point3f c_;
-    std::vector<Color4f> pixelArray_;
+    std::vector<Color3f> pixelArray_;
 };
 
 #endif

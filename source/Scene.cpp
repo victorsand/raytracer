@@ -26,8 +26,8 @@ Scene::Scene(std::string _sceneFileName)
       dofSamples_(1),
       focalLength_(1.f),
       apertureSize_(1.f),
-      pathTracingSamples_(500),
-      renderMode_(rayTracing_) {}
+      pathTracingSamples_(1),
+      renderMode_(rayTracing()) {}
 
 void Scene::parse() {
 
@@ -173,13 +173,13 @@ void Scene::parse() {
 		} else if (command == "AmbientLight") { 
             float r, g, b;
 			ss >> r >> g >> b;
-			Color4f col(r, g, b, 1.0);
+			Color3f col(r, g, b);
 			ambientLight_ = new AmbientLight(col);
 		} else if (command == "PointLight") {
 			float px, py, pz, r, g, b;
 			ss >> px >> py >> pz >> r >> g >> b;
 			Point3f pos(px, py, pz);
-			Color4f col(r, g, b, 1.0);
+			Color3f col(r, g, b);
             light_.push_back(new PointLight(pos, col));
         } else if (command == "AreaLight") {
             float cx, cy, cz, ax, ay, az, bx, by, bz, r, g, b;
@@ -187,13 +187,13 @@ void Scene::parse() {
             Point3f center(cx, cy, cz);
             Vector3f av(ax, ay, az);
             Vector3f bv(bx, by, bz);
-            Color4f c(r, g ,b,1.f);
+            Color3f c(r, g ,b);
             light_.push_back(new AreaLight(center, av, bv, c));
 		} else if (command == "DirectionalLight") {
 			float dx, dy, dz, r, g, b;
 			ss >> dx >> dy >> dz >> r >> g >> b;
 			Vector3f dir(dx, dy, dz);
-			Color4f col(r, g, b, 1.0);
+			Color3f col(r, g, b);
 			light_.push_back(new DirectionalLight(dir, col));
 		} else if (command == "Material") {
 			float ra, ga, ba, 
@@ -204,11 +204,11 @@ void Scene::parse() {
                 shine;
 			ss >> ra >> ga >> ba >> rd >> gd >> bd >> rs >> gs
                >> bs >> rr >> gr >> br >> re >> ge >> be >> shine;
-			Color4f amb(ra, ga, ba,1.0);
-			Color4f diff(rd, gd, bd, 1.0);
-			Color4f spec(rs, gs, bs, 1.0);
-			Color4f mirr(rr, gr, br, 1.0);
-            Color4f emitt(re, ge, be, 1.0);
+			Color3f amb(ra, ga, ba);
+			Color3f diff(rd, gd, bd);
+			Color3f spec(rs, gs, bs);
+			Color3f mirr(rr, gr, br);
+            Color3f emitt(re, ge, be);
 			currentMaterial_ = Material(amb, diff, spec, mirr, emitt, shine);
 		} else if (command == "RenderMode") {
             std::string mode;
@@ -217,7 +217,7 @@ void Scene::parse() {
                 renderMode_ = rayTracing_;
             } else if (mode == "PathTracing") {
                 renderMode_ = pathTracing_;
-            } else if (mode == "PhotnMapping") {
+            } else if (mode == "PhotonMapping") {
                 renderMode_ = photonMapping_;
             }
         }
@@ -226,6 +226,7 @@ void Scene::parse() {
 }
 
 void Scene::render() {
+
     imagePlane_->pixelArraySizeIs(outputWidth_*outputHeight_);
     float sw = 1.f/outputWidth_;
     float sh = 1.f/outputHeight_;
@@ -240,12 +241,14 @@ void Scene::render() {
         std::cout << std::setprecision(4) << percentage << "%" << std::endl;
 
         float u = static_cast<float>(x)/(outputWidth_-1.0f);
+
+        #pragma omp parallel for ordered schedule(dynamic)
         for (int y=0; y<outputHeight_; ++y) {
             float v = static_cast<float>(y)/(outputHeight_-1.0f);
 
             // Supersample (send more rays within the same pixels
             // and average the resulting color).
-            Color4f color(0.f, 0.f, 0.f, 1.f);  
+            Color3f color(0.f, 0.f, 0.f);  
             int superSamples = 0;
             for (int i=1; i<superSamplingFactor_+1; ++i) {
                 float ssu = u-sw/2.f+i*ssw;
@@ -271,7 +274,7 @@ void Scene::render() {
                                                               apertureSize_,
                                                               dofSamples_);
                             // Trace aperture rays
-                            Color4f aprtCol(0.f, 0.f, 0.f, 1.f);
+                            Color3f aprtCol(0.f, 0.f, 0.f);
                             std::vector<Ray>::const_iterator rayIt;
                             for (rayIt=aptRays.begin(); 
                                  rayIt!=aptRays.end();
@@ -279,11 +282,13 @@ void Scene::render() {
                                 if (renderMode_ == rayTracing_) {
                                     aprtCol += traceRay(*rayIt, bounceDepth_);
                                 } else if (renderMode_ == pathTracing_) {
-                                    Color4f pathTraceColor(0.f, 0.f, 0.f, 1.f);
+                                    Color3f pathTraceColor(0.f, 0.f, 0.f);
                                     for (int k=0; k<pathTracingSamples_; ++k) {
-                                        pathTraceColor += tracePath(*rayIt, bounceDepth_);
+                                        pathTraceColor += 
+                                         tracePath(*rayIt, bounceDepth_);
                                     }
-                                    aprtCol += pathTraceColor*(1.f/pathTracingSamples_);
+                                    aprtCol += 
+                                     pathTraceColor*(1.f/pathTracingSamples_);
                                 } else if (renderMode_ == photonMapping_) {
                                     // photon map
                                 }
@@ -318,24 +323,20 @@ IntersectionInfo Scene::findNearestIntersection(Ray _ray, Material& _m) {
     return ii;
 }
 
-Color4f Scene::traceRay(Ray _ray, int _depth) {
-
-    Color4f c = Color4f(0.f, 0.f, 0.f, 1.f);
+Color3f Scene::traceRay(Ray _ray, int _depth) {
+    Color3f c = Color3f(0.f, 0.f, 0.f);
     if (_depth < 1) return c;
-
     // Check intersection with all objects in the scene and store results
     Material m;
     IntersectionInfo ii = findNearestIntersection(_ray, m);
-
     // If we hit something, we now have the closest t value
     // and we shade. If the surface is mirrored, we send reflective
     // rays recursively. 
     if (ii.hitTest() == IntersectionInfo::hit()) {
          c += phongShade(ii, m);
-         if (m.mirror().r() > 0.f &&
-             m.mirror().g() > 0.f &&
-             m.mirror().b() > 0.f &&
-             m.mirror().a()) {
+         if (m.mirror().r() > 0.01f &&
+             m.mirror().g() > 0.01f &&
+             m.mirror().b() > 0.01f ) {
                  Vector3f inDir = _ray.d();
                  inDir.normalize();
                  Vector3f outDir = 
@@ -351,27 +352,21 @@ Color4f Scene::traceRay(Ray _ray, int _depth) {
     return c;
 }
 
-Color4f Scene::phongShade(IntersectionInfo _ii, Material _m) {
-
+Color3f Scene::phongShade(IntersectionInfo _ii, Material _m) {
     std::vector<Light*>::const_iterator it;
-    Color4f totalColor = Color4f(0.f, 0.f, 0.f, 1.f);
+    Color3f totalColor = Color3f(0.f, 0.f, 0.f);
     if (ambientLight_) totalColor += _m.ambient()*ambientLight_->color();
     Vector3f V = camera_->eye() - _ii.point();
     V.normalize();
-
     for (it = light_.begin(); it!=light_.end(); ++it) {
-
         std::vector<Vector3f> dirs = 
             (*it)->surfaceToLightDirection(_ii.point(), samplesPerAreaLight_);
-
         // For every light, iterate through all sample directions
         // generated.
         std::vector<Vector3f>::const_iterator dirIt = dirs.begin();
-        Color4f lightColor(0.f, 0.f, 0.f, 1.f);
+        Color3f lightColor(0.f, 0.f, 0.f);
         for (dirIt=dirs.begin(); dirIt!=dirs.end(); dirIt++) {
-  
             Vector3f L = (*dirIt);
-            int dude = L.magnitude();
             // If any object is between this light and the
             // point, skip this direction in the shading calculation
             Ray occludeTestRay = Ray(_ii.point(), 
@@ -410,45 +405,67 @@ Color4f Scene::phongShade(IntersectionInfo _ii, Material _m) {
     return totalColor;
 }
 
-Color4f Scene::tracePath(Ray _r, int _depth) {
-    Color4f c(0.f, 0.f, 0.f, 1.f);
+Color3f Scene::tracePath(Ray _r, int _depth) {
+    Color3f c(0.f, 0.f, 0.f);
     if (_depth < 1) return c;
     Material m;
     IntersectionInfo ii = findNearestIntersection(_r, m);
     if (ii.hitTest() == IntersectionInfo::miss()) return c;
-    Color4f emittance = m.emittance();
-    if (emittance.r() > 0.01 || emittance.g() > 0.01 || emittance.b() > 0001) 
-        return emittance;
-    Vector3f newDir = hemisphereVector(ii.normal());
+    if (m.emitting()) return m.emittance();
+    Vector3f newDir;
+    Color3f shadeColor;
+    float angleFactor;
+    // decide diffuse or specular path
+    float r = (float)rand()/(float)RAND_MAX;
+    float kd = m.diffuse().r()+m.diffuse().g()+m.diffuse().b();
+    float ks = m.specular().r()+m.specular().g()+m.specular().b();
+    float p = kd/(kd+ks);
+    if (r < p) { // diffuse path
+        newDir = hemisphereVector(ii.normal());
+        angleFactor = dot(newDir, ii.normal());
+        shadeColor = m.diffuse();
+    } else { // specular path
+        newDir = reflectionVector(_r.d(), ii.normal(), m.shine());
+        angleFactor = 1.f;
+        shadeColor = m.specular();
+    }
     Ray newRay(ii.point(),
                newDir,
                shadowBias_,
                std::numeric_limits<float>::max());
-    float cosOmega = dot(newDir, ii.normal());
-    Color4f BDRF = m.diffuse();
-    Color4f reflected = tracePath(newRay, _depth-1);
-    c = (BDRF*cosOmega*reflected);
+    Color3f reflected = tracePath(newRay, _depth-1);
+    Color3f BDRF = shadeColor;
+    c = (BDRF*angleFactor*reflected);
     return c;
+}
 
+Vector3f Scene::reflectionVector(Vector3f _v, Vector3f _n, float _shine) {
+    float jitter = 1.f - _shine;
+    _n.normalize();
+    float sx, sy, sz;
+    Vector3f reflected = _v - 2.f*dot(_v,_n)*_n;
+    Vector3f out;
+    sx = jitter * ( 2.f * (float)rand()/(float)RAND_MAX - 1.f );
+    sy = jitter * ( 2.f * (float)rand()/(float)RAND_MAX - 1.f );
+    sz = jitter * ( 2.f * (float)rand()/(float)RAND_MAX - 1.f );
+    out = reflected + Vector3f(sx, sy, sz);
+    return out;
 }
 
 Vector3f Scene::hemisphereVector(Vector3f _normal) {
     Vector3f v;
-    float r1 = (float)rand()/(float)RAND_MAX;
-    float r2 = (float)rand()/(float)RAND_MAX;
-    float x = 2.f*cos(2.f*M_PI*r1)*sqrt(r2*(1.f-r2));
-    float y = 2.f*sin(2.f*M_PI*r1)*sqrt(r2*(1.f-r2));
-    float z = (1.f-2.f*r2);;
+    float x = 2.f * (float)rand()/(float)RAND_MAX - 1.f;
+    float y = 2.f * (float)rand()/(float)RAND_MAX - 1.f;
+    float z = 2.f * (float)rand()/(float)RAND_MAX - 1.f;
     v.vectorIs(x,y,z);
-    while (dot(v,_normal) < 0.0) {
-        r1 = (float)rand()/(float)RAND_MAX;
-        r2 = (float)rand()/(float)RAND_MAX;
-        x = 2.f*cos(2.f*M_PI*r1)*sqrt(r2*(1.f-r2));
-        y = 2.f*sin(2.f*M_PI*r1)*sqrt(r2*(1.f-r2));
-        z = (1.f-2.f*r2);;
-        v.vectorIs(x, y, z);
-    }
     v.normalize();
+    while (dot(v,_normal) < 0.0) {
+        x = 2.f * (float)rand()/(float)RAND_MAX - 1.f;
+        y = 2.f * (float)rand()/(float)RAND_MAX - 1.f;
+        z = 2.f * (float)rand()/(float)RAND_MAX - 1.f;
+        v.vectorIs(x, y, z);
+        v.normalize();
+    }
     return v;
 }
 
@@ -466,8 +483,7 @@ void Scene::writeToFile() {
                 static_cast<int>(imagePlane_->pixel(index).g()*255.0);    
             image(x,y)->Blue =
                 static_cast<int>(imagePlane_->pixel(index).b()*255.0);
-            image(x,y)->Alpha =
-                static_cast<int>(imagePlane_->pixel(index).a()*255.0);
+            image(x,y)->Alpha = 255;
         }
     }
     image.WriteToFile(outputFileName_.c_str());

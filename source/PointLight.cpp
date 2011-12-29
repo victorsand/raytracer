@@ -1,6 +1,6 @@
 #include "PointLight.h"
 
-PointLight::PointLight(Point3f _position, Color4f _color) 
+PointLight::PointLight(Point3f _position, Color3f _color) 
     : color_(_color), position_(_position) {}
 
 std::vector<Vector3f>

@@ -1,6 +1,6 @@
 #include "DirectionalLight.h"
 
-DirectionalLight::DirectionalLight(Vector3f _direction, Color4f _color) 
+DirectionalLight::DirectionalLight(Vector3f _direction, Color3f _color) 
     : color_(_color), direction_(_direction) {}
 
 std::vector<Vector3f> 

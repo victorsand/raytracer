@@ -1,7 +1,7 @@
 #include "AreaLight.h"
 #include <random>
 
-AreaLight::AreaLight(Point3f _c, Vector3f _a, Vector3f _b, Color4f _color)
+AreaLight::AreaLight(Point3f _c, Vector3f _a, Vector3f _b, Color3f _color)
     : c_(_c), a_(_a), b_(_b), color_(_color) {}
 
 std::vector<Vector3f> 

@@ -11,12 +11,12 @@ only one ambient light in a scene.
 
 class AmbientLight {
 public:
-    AmbientLight(Color4f _color);
-    Color4f color() const { return color_; }
+    AmbientLight(Color3f _color);
+    Color3f color() const { return color_; }
 private:
     AmbientLight();
         AmbientLight(const AmbientLight&);
-    Color4f color_;
+    Color3f color_;
 };
 
 #endif

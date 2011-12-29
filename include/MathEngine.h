@@ -70,29 +70,27 @@ Vector3f operator*(const Vector3f& _v, const float &_f);
 Vector3f operator*(const float &_f, const Vector3f& _v);
 Vector3f operator/(const Vector3f& _v, const float &_f);
 
-class Color4f {
+class Color3f {
 public:
-    Color4f(float _r, float _g, float _b, float _a);
-    Color4f(const Color4f& _Color4f);
-    Color4f();
+    Color3f(float _r, float _g, float _b);
+    Color3f(const Color3f& _Color3f);
+    Color3f();
     float r() const { return r_; }
     float g() const { return g_; }
     float b() const { return b_; }
-    float a() const { return a_; }
-    void operator+=(const Color4f& _c);
+    void operator+=(const Color3f& _c);
     void truncate();
     void normalize();
 private:
     float r_;
     float g_;
     float b_;
-    float a_;
 };
 
-Color4f operator*(const Color4f& _c1, const Color4f& _c2);
-Color4f operator*(const Color4f& _c, float _f);
-Color4f operator*(float _f, const Color4f& _c);
-Color4f operator+(const Color4f& _c1, const Color4f& _c2);
+Color3f operator*(const Color3f& _c1, const Color3f& _c2);
+Color3f operator*(const Color3f& _c, float _f);
+Color3f operator*(float _f, const Color3f& _c);
+Color3f operator+(const Color3f& _c1, const Color3f& _c2);
 
 #endif
 

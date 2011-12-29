@@ -1,11 +1,11 @@
 #include "Material.h"
 
 Material::Material() 
-    : ambient_(Color4f(0.0, 1.0, 0.0, 1.0)),
-      diffuse_(Color4f(0.0, 1.0, 0.0, 1.0)),
-      specular_(Color4f(0.0, 0.0, 0.0, 1.0)),
-      mirror_(Color4f(0.0, 0.0, 0.0, 1.0)),
-      emittance_(Color4f(0.0, 0.0, 0.0, 1.0)),
+    : ambient_(Color3f(0.0, 1.0, 0.0)),
+      diffuse_(Color3f(0.0, 1.0, 0.0)),
+      specular_(Color3f(0.0, 0.0, 0.0)),
+      mirror_(Color3f(0.0, 0.0, 0.0)),
+      emittance_(Color3f(0.0, 0.0, 0.0)),
       shine_(0.0) {}
 
 Material::Material(const Material &_m)
@@ -16,11 +16,11 @@ Material::Material(const Material &_m)
       emittance_(_m.emittance()),
       shine_(_m.shine()) {}
 
-Material::Material(Color4f _ambient,
-                   Color4f _diffuse,
-                   Color4f _specular,
-                   Color4f _mirror,
-                   Color4f _emittance,
+Material::Material(Color3f _ambient,
+                   Color3f _diffuse,
+                   Color3f _specular,
+                   Color3f _mirror,
+                   Color3f _emittance,
                    float _shine)
                    :
                    ambient_(_ambient),
@@ -29,6 +29,10 @@ Material::Material(Color4f _ambient,
                    mirror_(_mirror),
                    emittance_(_emittance),
                    shine_(_shine) {}
+
+bool Material::emitting() const {
+    return (emittance_.r()>0.001||emittance_.g()>0.001||emittance_.b()>0.001);
+}
 
 
      

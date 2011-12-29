@@ -33,11 +33,11 @@ Point3f ImagePlane::imagePlanePoint(float _u, float _v) {
     return Point3f(x,y,z);
 }
    
-void ImagePlane::pixelIs(int _pixelIndex, Color4f _color) {
+void ImagePlane::pixelIs(int _pixelIndex, Color3f _color) {
     pixelArray_.at(_pixelIndex) = _color;
 }
 
-Color4f ImagePlane::pixel(int _pixelIndex) {
+Color3f ImagePlane::pixel(int _pixelIndex) {
     return pixelArray_.at(_pixelIndex);
 }
 

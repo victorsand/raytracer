@@ -7,24 +7,25 @@ class Material {
 public:
     Material();
     Material(const Material&);
-    Material(Color4f _ambient,
-             Color4f _diffuse,
-             Color4f _specular,
-             Color4f _mirror, 
-             Color4f _emmitance,
+    Material(Color3f _ambient,
+             Color3f _diffuse,
+             Color3f _specular,
+             Color3f _mirror, 
+             Color3f _emmitance,
              float _shine);
-    Color4f ambient() const { return ambient_; }
-    Color4f diffuse() const { return diffuse_; }
-    Color4f specular() const { return specular_; }
-    Color4f mirror() const { return mirror_; }
-    Color4f emittance() const { return emittance_; }
+    Color3f ambient() const { return ambient_; }
+    Color3f diffuse() const { return diffuse_; }
+    Color3f specular() const { return specular_; }
+    Color3f mirror() const { return mirror_; }
+    Color3f emittance() const { return emittance_; }
+    bool emitting() const;
     float shine() const { return shine_; }
 private:
-    Color4f ambient_;
-    Color4f diffuse_;
-    Color4f specular_;
-    Color4f mirror_;
-    Color4f emittance_;
+    Color3f ambient_;
+    Color3f diffuse_;
+    Color3f specular_;
+    Color3f mirror_;
+    Color3f emittance_;
     float shine_;
 };
 
